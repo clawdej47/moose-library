@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Home Library</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Library">
+  <meta name="theme-color" content="#f5f2eb">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Variables ─────────────────────────────────────────── */
+    :root {
+      --bg:       #f5f2eb;
+      --card:     #faf8f3;
+      --ink:      #1a1a18;
+      --ink2:     #5a5a55;
+      --border:   #d4cfc4;
+      --coral:    #c84b2f;
+      --green:    #2f6b4f;
+      --amber:    #b07d2f;
+      --purple:   #6b4f8f;
+      --blue:     #2f5a8f;
+      --gray:     #888880;
+      --shadow:   rgba(26,26,24,.10);
+      --serif:    'DM Serif Display', Georgia, serif;
+      --mono:     'DM Mono', 'Courier New', monospace;
+      --max:      480px;
+      --hdr:      52px;
+      --bar:      60px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      max-width: var(--max);
+      margin: 0 auto;
+    }
+    button { font-family: var(--mono); cursor: pointer; }
+    input, select, textarea { font-family: var(--mono); }
+    ::-webkit-scrollbar { display: none; }
+
+    /* ── Header ────────────────────────────────────────────── */
+    .hdr {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: var(--max);
+      height: var(--hdr);
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 16px;
+      z-index: 100;
+    }
+    .hdr-title { font-family: var(--serif); font-size: 22px; }
+    .hdr-count { margin-left: auto; font-size: 12px; color: var(--ink2); }
+
+    /* ── Tab panels ────────────────────────────────────────── */
+    .panel {
+      display: none;
+      padding: calc(var(--hdr) + 16px) 16px calc(var(--bar) + env(safe-area-inset-bottom) + 16px);
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+    .panel.active { display: block; }
+
+    /* ── Bottom tab bar ────────────────────────────────────── */
+    .bar {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: var(--max);
+      height: calc(var(--bar) + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--bg); border-top: 1px solid var(--border);
+      display: flex; z-index: 100;
+    }
+    .bar-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px;
+      background: none; border: none; color: var(--ink2);
+      font-size: 10px; padding: 6px 4px;
+      -webkit-tap-highlight-color: transparent;
+      transition: color .15s;
+    }
+    .bar-btn svg { width: 22px; height: 22px; stroke-width: 1.75; }
+    .bar-btn.active { color: var(--coral); }
+
+    /* ── Inputs / selects ──────────────────────────────────── */
+    .inp, select {
+      width: 100%; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px 12px; font-size: 14px; color: var(--ink);
+      outline: none; transition: border-color .15s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .inp:focus, select:focus { border-color: var(--coral); }
+    .inp-wrap { position: relative; }
+    .inp-icon {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      color: var(--ink2); pointer-events: none;
+    }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a5a55' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+
+    /* ── Buttons ───────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 16px; border-radius: 6px; border: none;
+      font-size: 13px; font-weight: 500; font-family: var(--mono);
+      -webkit-tap-highlight-color: transparent; transition: opacity .15s;
+      white-space: nowrap;
+    }
+    .btn:active { opacity: .7; }
+    .btn-primary  { background: var(--coral); color: #fff; }
+    .btn-success  { background: var(--green); color: #fff; }
+    .btn-ghost    { background: transparent; border: 1px solid var(--border); color: var(--ink); }
+    .btn-danger   { background: transparent; border: 1px solid var(--coral); color: var(--coral); }
+    .btn-sm       { padding: 6px 12px; font-size: 12px; }
+    .btn-full     { width: 100%; }
+    .btn-icon     { padding: 10px; }
+    .btn.listening { background: var(--coral); color: #fff; border-color: var(--coral); }
+
+    /* ── Status pills ──────────────────────────────────────── */
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      font-size: 11px; font-weight: 500; white-space: nowrap; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .p-shelf  { background: #d4ede3; color: var(--green); }
+    .p-loan   { background: #f5ddd8; color: var(--coral); }
+    .p-want   { background: #f5e8cc; color: var(--amber); }
+    .p-audio  { background: #e8d4f5; color: var(--purple); }
+    .p-ebook  { background: #d4e4f5; color: var(--blue); }
+    .p-other  { background: #e5e5e0; color: var(--gray); }
+
+    /* ── Section headings ──────────────────────────────────── */
+    .sec-hd { font-family: var(--serif); font-size: 18px; margin: 20px 0 12px; }
+    .sec-hd:first-child { margin-top: 0; }
+
+    /* ── Form groups ───────────────────────────────────────── */
+    .fg { margin-bottom: 12px; }
+    .fl {
+      display: block; font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--ink2); margin-bottom: 4px;
+    }
+    .inp-row { display: flex; gap: 8px; }
+    .inp-row .inp { flex: 1; }
+
+    /* ── Sub-tabs (action panel) ───────────────────────────── */
+    .subtabs {
+      display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+    }
+    .stab {
+      flex: 1; padding: 10px 4px; background: none; border: none;
+      border-bottom: 2px solid transparent; font-family: var(--mono);
+      font-size: 12px; color: var(--ink2); cursor: pointer;
+      -webkit-tap-highlight-color: transparent; margin-bottom: -1px;
+      transition: color .15s;
+    }
+    .stab.active { color: var(--coral); border-bottom-color: var(--coral); }
+
+    /* ── Search results ────────────────────────────────────── */
+    .result {
+      display: flex; flex-direction: column;
+      padding: 10px 12px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: 8px; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; transition: border-color .15s;
+    }
+    .result.sel { border-color: var(--coral); background: #fdf0ee; }
+    .r-title { font-weight: 500; font-size: 14px; }
+    .r-author { font-size: 12px; color: var(--ink2); }
+    .r-year { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+    /* ── Action panel ──────────────────────────────────────── */
+    .action-panel {
+      display: none; margin-top: 16px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+    }
+    .action-panel.open { display: block; }
+    .ap-book-title { font-weight: 500; font-size: 15px; margin-bottom: 2px; }
+    .ap-book-author { font-size: 12px; color: var(--ink2); margin-bottom: 14px; }
+
+    /* ── Filter bar ────────────────────────────────────────── */
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+    .filter-bar select { flex: 1; }
+
+    /* ── Book list ─────────────────────────────────────────── */
+    .book-list { border-top: 1px solid var(--border); }
+    .book-wrap { border-bottom: 1px solid var(--border); }
+    .book-row {
+      display: flex; align-items: center; padding: 10px 0;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .book-info { flex: 1; min-width: 0; }
+    .book-title {
+      font-size: 14px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .book-author {
+      font-size: 12px; color: var(--ink2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .book-meta { display: flex; align-items: center; gap: 6px; margin-left: 8px; flex-shrink: 0; }
+    .loan-badge {
+      background: var(--ink); color: var(--bg);
+      border-radius: 10px; font-size: 11px; padding: 1px 6px; font-weight: 500;
+    }
+
+    /* ── Book history ──────────────────────────────────────── */
+    .book-hist {
+      display: none; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px; margin-bottom: 8px; font-size: 12px;
+    }
+    .book-hist.open { display: block; }
+    .hist-row {
+      display: flex; justify-content: space-between; gap: 8px;
+      padding: 4px 0; border-bottom: 1px solid var(--border); color: var(--ink2);
+    }
+    .hist-row:last-child { border-bottom: none; }
+    .hist-type { font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+                 color: var(--gray); margin-bottom: 2px; }
+    .hist-rating { padding: 2px 0 4px; }
+    .stars { font-size: 18px; letter-spacing: 1px; }
+    .star { color: var(--border); }
+    .star.filled { color: var(--coral); }
+    .hist-unrated { font-size: 12px; color: var(--gray); font-style: italic; }
+
+    /* ── Loan cards ────────────────────────────────────────── */
+    .loan-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px; margin-bottom: 10px;
+    }
+    .loan-card.borrowed { border-left: 3px solid var(--purple); }
+    .loan-card.done { opacity: .6; }
+    .l-title { font-weight: 500; font-size: 14px; }
+    .l-author { font-size: 12px; color: var(--ink2); margin-bottom: 4px; }
+    .l-meta { font-size: 12px; color: var(--ink2); }
+    .l-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+    /* ── Settings ──────────────────────────────────────────── */
+    .settings-sec { margin-bottom: 28px; }
+    .settings-hd { font-family: var(--serif); font-size: 18px; margin-bottom: 12px; }
+    .settings-hint { font-size: 12px; color: var(--ink2); margin-top: 6px; line-height: 1.6; }
+    .status-ind {
+      font-size: 12px; margin-top: 8px; padding: 8px 12px;
+      border-radius: 6px; display: none;
+    }
+    .status-ind.ok  { background: #d4ede3; color: var(--green); display: block; }
+    .status-ind.err { background: #f5ddd8; color: var(--coral); display: block; }
+
+    /* ── Modal ─────────────────────────────────────────────── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(26,26,24,.5); z-index: 500;
+      align-items: flex-end; justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--bg); border-radius: 16px 16px 0 0;
+      padding: 24px 16px calc(32px + env(safe-area-inset-bottom));
+      width: 100%; max-width: var(--max); max-height: 80vh; overflow-y: auto;
+    }
+    .modal-title { font-family: var(--serif); font-size: 20px; margin-bottom: 16px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-size: 11px; font-weight: 500; text-transform: uppercase;
+                  letter-spacing: .05em; color: var(--ink2); margin-bottom: 4px; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row .inp { flex: 1; }
+    .mic-btn {
+      flex-shrink: 0; padding: 10px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer; color: var(--ink2); display: flex;
+      align-items: center; justify-content: center;
+    }
+    .mic-btn.listening { background: var(--coral); border-color: var(--coral); color: #fff; }
+    .modal-close {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; font-size: 20px; color: var(--ink2);
+      cursor: pointer; padding: 4px;
+    }
+
+    /* Status options inside modal */
+    .status-opt-list { display: flex; flex-direction: column; gap: 4px; }
+    .status-opt {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px; border-radius: 8px; background: none;
+      border: 1px solid var(--border); text-align: left;
+      font-size: 14px; font-family: var(--mono);
+      -webkit-tap-highlight-color: transparent; transition: border-color .15s;
+    }
+    .status-opt:active { border-color: var(--coral); }
+
+    /* ── Toast ─────────────────────────────────────────────── */
+    .toasts {
+      position: fixed; bottom: calc(var(--bar) + env(safe-area-inset-bottom) + 12px);
+      left: 50%; transform: translateX(-50%);
+      width: calc(100% - 32px); max-width: calc(var(--max) - 32px);
+      z-index: 600; display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--ink); color: var(--bg);
+      padding: 12px 16px; border-radius: 8px; font-size: 13px;
+      animation: tUp .2s ease, tOut .3s ease 2.5s forwards;
+    }
+    .toast.success { background: var(--green); }
+    .toast.error   { background: var(--coral); }
+    @keyframes tUp  { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    @keyframes tOut { from { opacity:1 } to { opacity:0 } }
+
+    /* ── Spinner ───────────────────────────────────────────── */
+    .spin {
+      width: 20px; height: 20px; border: 2px solid var(--border);
+      border-top-color: var(--coral); border-radius: 50%;
+      animation: spinning .8s linear infinite; display: inline-block; vertical-align: middle;
+    }
+    @keyframes spinning { to { transform: rotate(360deg) } }
+
+    /* ── Empty state ───────────────────────────────────────── */
+    .empty { text-align: center; color: var(--ink2); padding: 48px 20px; }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty p { font-size: 14px; line-height: 1.6; }
+
+    /* ── Loading overlay ───────────────────────────────────── */
+    .load-row { display: flex; align-items: center; gap: 10px; padding: 20px 0; color: var(--ink2); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ════════════════════════════════════════════════ -->
+<header class="hdr">
+  <div class="hdr-title">Home Library</div>
+  <div class="hdr-count" id="hdr-count"></div>
+</header>
+
+<!-- ══ TAB: SCAN ════════════════════════════════════════════ -->
+<div class="panel" id="panel-scan">
+  <div class="fg">
+    <div class="inp-wrap">
+      <input class="inp" id="scan-q" type="text" placeholder="Search title or author…" autocomplete="off" autocorrect="off">
+      <span class="inp-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </span>
+    </div>
+  </div>
+
+  <div id="scan-results"></div>
+
+  <!-- Action panel (shown after selecting a book) -->
+  <div class="action-panel" id="action-panel">
+    <div class="ap-book-title" id="ap-title"></div>
+    <div class="ap-book-author" id="ap-author"></div>
+
+    <div class="subtabs">
+      <button class="stab active" onclick="switchStab('lend', this)">Lend Out</button>
+      <button class="stab" onclick="switchStab('shelf', this)">Add to Shelf</button>
+      <button class="stab" onclick="switchStab('borrow', this)">I Borrowed This</button>
+    </div>
+
+    <!-- Lend Out -->
+    <div id="stab-lend">
+      <div class="fg">
+        <label class="fl">Borrower Name</label>
+        <div class="inp-row">
+          <input class="inp" id="lend-borrower" type="text" placeholder="Name…">
+          <button class="btn btn-ghost btn-icon" id="lend-mic" onclick="dictate('lend-borrower','lend-mic')" title="Voice input">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Date Lent</label>
+        <input class="inp" id="lend-date" type="date">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitLend()">Log Loan</button>
+    </div>
+
+    <!-- Add to Shelf -->
+    <div id="stab-shelf" style="display:none">
+      <div class="fg">
+        <label class="fl">Status</label>
+        <select id="shelf-status">
+          <option value="On shelf">On shelf</option>
+          <option value="Want to read">Want to read</option>
+          <option value="Audio">Audio</option>
+          <option value="Ebook">Ebook</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitAddToShelf()">Add to Library</button>
+    </div>
+
+    <!-- I Borrowed This -->
+    <div id="stab-borrow" style="display:none">
+      <div class="fg">
+        <label class="fl">Lent to me by</label>
+        <div class="inp-row">
+          <input class="inp" id="borrow-lender" type="text" placeholder="Name…">
+          <button class="btn btn-ghost btn-icon" id="borrow-mic" onclick="dictate('borrow-lender','borrow-mic')" title="Voice input">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Date Borrowed</label>
+        <input class="inp" id="borrow-date" type="date">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitBorrowThis()">Log Borrowed Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: ON LOAN ══════════════════════════════════════════ -->
+<div class="panel" id="panel-loans">
+  <div id="loans-content">
+    <div class="empty"><p>Loading…</p></div>
+  </div>
+</div>
+
+<!-- ══ TAB: BOOKS ════════════════════════════════════════════ -->
+<div class="panel active" id="panel-books">
+  <div class="fg">
+    <div class="inp-wrap">
+      <input class="inp" id="books-q" type="text" placeholder="Filter books…" oninput="renderBooks()" autocorrect="off">
+      <span class="inp-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </span>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <select id="status-filter" onchange="renderBooks()">
+      <option value="">All statuses</option>
+      <option value="On shelf">On shelf</option>
+      <option value="On loan">On loan</option>
+      <option value="Want to read">Want to read</option>
+      <option value="Audio">Audio</option>
+      <option value="Ebook">Ebook</option>
+      <option value="Other">Other</option>
+    </select>
+    <select id="sort-by" onchange="renderBooks()">
+      <option value="title">Title A–Z</option>
+      <option value="author">Author A–Z</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="reloadBooks()">Refresh</button>
+  </div>
+  <div id="books-list"></div>
+</div>
+
+<!-- ══ TAB: SETTINGS ═════════════════════════════════════════ -->
+<div class="panel" id="panel-settings">
+  <div class="settings-sec">
+    <div class="settings-hd">Apps Script URL</div>
+    <div class="fg">
+      <input class="inp" id="script-url" type="url" placeholder="https://script.google.com/macros/s/…">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveScriptUrl()">Save &amp; Connect</button>
+    <div class="status-ind" id="script-status"></div>
+    <p class="settings-hint">
+      Deploy your Apps Script as a Web App (Execute as: Me, Access: Anyone)
+      and paste the URL above. See <code>appsscript.gs</code> for the backend code.
+    </p>
+  </div>
+
+  <div class="settings-sec">
+    <div class="settings-hd">Import Goodreads CSV</div>
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('csv-input').click()">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Choose CSV File
+    </button>
+    <input type="file" id="csv-input" accept=".csv" onchange="handleCSV(this)" style="display:none">
+    <p class="settings-hint">
+      Export from Goodreads: My Books → Import/Export → Export Library.
+      The app reads Title, Author, ISBN, ISBN13, My Rating, and Exclusive Shelf columns.
+    </p>
+  </div>
+
+  <div class="settings-sec">
+    <div class="settings-hd">About</div>
+    <p class="settings-hint" style="line-height:1.8">
+      Status changes are saved locally on this device.<br>
+      Loans sync to Google Sheets via Apps Script.<br>
+      Add to home screen for the full PWA experience.
+    </p>
+  </div>
+</div>
+
+<!-- ══ BOTTOM TAB BAR ════════════════════════════════════════ -->
+<nav class="bar">
+  <button class="bar-btn active" data-tab="books" onclick="switchTab('books')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>Books</span>
+  </button>
+  <button class="bar-btn" data-tab="loans" onclick="switchTab('loans')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    <span>On Loan</span>
+  </button>
+  <button class="bar-btn" data-tab="scan" onclick="switchTab('scan')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <span>Scan</span>
+  </button>
+  <button class="bar-btn" data-tab="settings" onclick="switchTab('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<!-- ══ MODAL (edit / status picker) ═════════════════════════ -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- ══ TOASTS ════════════════════════════════════════════════ -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+let catalog         = [];
+let loans           = [];
+let statusOverrides = {};
+let scriptUrl       = '';
+let selectedBook    = null;
+let currentTab      = 'books';
+let recognition     = null;
+let scanDebounce    = null;
+let filteredBooks   = []; // for index-based callbacks in Books tab
+
+const STATUSES = ['On shelf', 'On loan', 'Want to read', 'Audio', 'Ebook', 'Other'];
+const PILL_CLASS = {
+  'On shelf':     'p-shelf',
+  'On loan':      'p-loan',
+  'Want to read': 'p-want',
+  'Audio':        'p-audio',
+  'Ebook':        'p-ebook',
+  'Other':        'p-other'
+};
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw22bvkSfyhu0Z_uNuoPGCQCgUNZQGCySsINskhLATfD0qu273AAZkYCuZ1ejhnjuoU/exec';
+  scriptUrl = localStorage.getItem('scriptUrl') || APPS_SCRIPT_URL;
+  statusOverrides = JSON.parse(localStorage.getItem('statusOverrides') || '{}');
+
+  const urlInput = document.getElementById('script-url');
+  if (urlInput) urlInput.value = scriptUrl;
+
+  document.getElementById('scan-q').addEventListener('input', onScanInput);
+  document.getElementById('lend-date').value   = today();
+  document.getElementById('borrow-date').value = today();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  setupSpeech();
+
+  if (scriptUrl) {
+    loadAll().then(() => { updateCount(); });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  if (tab === currentTab) return;
+
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.bar-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+  const prev = currentTab;
+  currentTab = tab;
+
+  // Reload data only on tab switch to Books or Loans
+  if (tab === 'books') {
+    if (scriptUrl) loadAll().then(() => { renderBooks(); updateCount(); });
+    else renderBooks();
+  } else if (tab === 'loans') {
+    if (scriptUrl) loadLoans().then(renderLoans);
+    else renderLoans();
+  }
+}
+
+function switchStab(id, btn) {
+  ['lend', 'shelf', 'borrow'].forEach(s => {
+    document.getElementById(`stab-${s}`).style.display = s === id ? '' : 'none';
+  });
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════
+// API
+// ════════════════════════════════════════════════════════════
+async function apiFetch(params) {
+  if (!scriptUrl) throw new Error('No Apps Script URL saved. Go to Settings.');
+  const url = new URL(scriptUrl);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+async function apiPost(body) {
+  if (!scriptUrl) throw new Error('No Apps Script URL saved. Go to Settings.');
+  const res = await fetch(scriptUrl, {
+    method: 'POST',
+    redirect: 'follow',
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ════════════════════════════════════════════════════════════
+// DATA LOADING
+// ════════════════════════════════════════════════════════════
+async function loadAll() {
+  await Promise.all([loadCatalog(), loadLoans()]);
+}
+
+async function loadCatalog() {
+  const data = await apiFetch({ action: 'catalog' });
+  // Handle raw array OR { books: [...] } wrapper
+  const rows = Array.isArray(data) ? data : (data.books || []);
+  catalog = rows.map(normBook);
+}
+
+async function loadLoans() {
+  try {
+    const data = await apiFetch({ action: 'loans' });
+    // Handle raw array OR { loans: [...] } wrapper
+    const rows = Array.isArray(data) ? data : (data.loans || []);
+    loans = rows.map(normLoan);
+  } catch {
+    // Loans endpoint not yet set up — that's fine, start empty
+    loans = [];
+  }
+}
+
+function normBook(b) {
+  return {
+    title:  b.Title  || b.title  || '',
+    author: b.Author || b.author || '',
+    isbn:   cleanISBN(b.ISBN13 || b.isbn13 || b.isbn10 || b.ISBN || b.isbn || ''),
+    isbn13: cleanISBN(b.ISBN13 || b.isbn13 || ''),
+    shelf:  b.Shelf  || b.shelf  || b['Exclusive Shelf'] || '',
+    status: b.Status || b.status || '',
+    rating: b.Rating || b.rating || b['My Rating'] || ''
+  };
+}
+
+function normLoan(l) {
+  return {
+    rowIndex:     l.rowIndex,
+    title:        l.Title        || l.title        || '',
+    author:       l.Author       || l.author       || '',
+    isbn:         l.ISBN         || l.isbn         || '',
+    borrower:     l.Borrower     || l.borrower     || '',
+    dateLent:     l['Date Lent'] || l.dateLent     || '',
+    dateReturned: l['Date Returned'] || l.dateReturned || '',
+    type:         l.Type         || l.type         || 'lent'
+  };
+}
+
+function updateCount() {
+  const el = document.getElementById('hdr-count');
+  el.textContent = catalog.length ? `${catalog.length} books` : '';
+}
+
+// ════════════════════════════════════════════════════════════
+// SCAN TAB — SEARCH
+// ════════════════════════════════════════════════════════════
+function onScanInput() {
+  clearTimeout(scanDebounce);
+  const q = document.getElementById('scan-q').value.trim();
+  if (q.length < 2) {
+    document.getElementById('scan-results').innerHTML = '';
+    return;
+  }
+  scanDebounce = setTimeout(() => searchOL(q), 400);
+}
+
+async function searchOL(query) {
+  const el = document.getElementById('scan-results');
+  el.innerHTML = '<div class="load-row"><div class="spin"></div> Searching Open Library…</div>';
+  try {
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=title,author_name,first_publish_year,isbn,key&limit=12`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    renderResults(data.docs || []);
+  } catch {
+    el.innerHTML = '<div class="empty"><p>Search failed. Check your connection.</p></div>';
+  }
+}
+
+function renderResults(docs) {
+  const el = document.getElementById('scan-results');
+  window._docs = docs;
+
+  if (!docs.length) {
+    el.innerHTML = '<div class="empty"><p>No results found.</p></div>';
+    return;
+  }
+
+  el.innerHTML = docs.map((d, i) => {
+    const title  = d.title || 'Unknown';
+    const author = (d.author_name || []).join(', ') || '';
+    const year   = d.first_publish_year || '';
+    return `<div class="result" id="res-${i}" onclick="selectBook(${i})">
+      <div class="r-title">${esc(title)}</div>
+      ${author ? `<div class="r-author">${esc(author)}</div>` : ''}
+      ${year   ? `<div class="r-year">${year}</div>`          : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectBook(idx) {
+  const d = window._docs[idx];
+  selectedBook = {
+    title:  d.title || '',
+    author: (d.author_name || []).join(', ') || '',
+    isbn:   (d.isbn || [])[0] || ''
+  };
+
+  document.querySelectorAll('.result').forEach((el, i) =>
+    el.classList.toggle('sel', i === idx));
+
+  document.getElementById('ap-title').textContent  = selectedBook.title;
+  document.getElementById('ap-author').textContent = selectedBook.author;
+
+  const panel = document.getElementById('action-panel');
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ════════════════════════════════════════════════════════════
+// SCAN TAB — ACTIONS
+// ════════════════════════════════════════════════════════════
+async function submitLend() {
+  if (!selectedBook) return toast('Select a book first', 'error');
+  const borrower = document.getElementById('lend-borrower').value.trim();
+  const dateLent = document.getElementById('lend-date').value;
+  if (!borrower) return toast('Enter borrower name', 'error');
+  if (!dateLent) return toast('Enter date lent',    'error');
+  if (!scriptUrl) return toast('Configure Apps Script URL in Settings', 'error');
+
+  try {
+    await apiPost({ action: 'loan', ...selectedBook, borrower, dateLent });
+    toast(`Lent to ${borrower}`, 'success');
+    document.getElementById('lend-borrower').value = '';
+    await loadLoans();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function submitAddToShelf() {
+  if (!selectedBook) return toast('Select a book first', 'error');
+  const status = document.getElementById('shelf-status').value;
+
+  // Check if already in catalog
+  const existing = findInCatalog(selectedBook);
+  if (existing) {
+    const key = bookKey(existing);
+    setOverride(key, status);
+    if (scriptUrl) {
+      try { await apiPost({ action: 'updateStatus', ...existing, status }); } catch {}
+    }
+    toast(`Status set to "${status}"`, 'success');
+    return;
+  }
+
+  if (scriptUrl) {
+    try {
+      await apiPost({ action: 'addBook', ...selectedBook, isbn13: '', shelf: '', rating: '', status });
+    } catch (e) {
+      toast(e.message, 'error');
+      return;
+    }
+  }
+
+  catalog.push({ ...selectedBook, isbn13: '', shelf: '', status, rating: '' });
+  setOverride(bookKey(selectedBook), status);
+  updateCount();
+  toast(`Added to library as "${status}"`, 'success');
+}
+
+async function submitBorrowThis() {
+  if (!selectedBook)  return toast('Select a book first', 'error');
+  const lender       = document.getElementById('borrow-lender').value.trim();
+  const dateBorrowed = document.getElementById('borrow-date').value;
+  if (!lender)       return toast('Enter lender name', 'error');
+  if (!dateBorrowed) return toast('Enter date borrowed', 'error');
+  if (!scriptUrl)    return toast('Configure Apps Script URL in Settings', 'error');
+
+  try {
+    await apiPost({ action: 'borrow', ...selectedBook, lender, dateBorrowed });
+    toast(`Logged: borrowed from ${lender}`, 'success');
+    document.getElementById('borrow-lender').value = '';
+    await loadLoans();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// LOANS TAB
+// ════════════════════════════════════════════════════════════
+function renderLoans() {
+  const el = document.getElementById('loans-content');
+
+  const lentActive    = loans.filter(l => l.type === 'lent'     && !l.dateReturned);
+  const lentDone      = loans.filter(l => l.type === 'lent'     &&  l.dateReturned);
+  const borActive     = loans.filter(l => l.type === 'borrowed' && !l.dateReturned);
+  const borDone       = loans.filter(l => l.type === 'borrowed' &&  l.dateReturned);
+
+  let html = '';
+
+  html += `<div class="sec-hd">Books I've Lent Out</div>`;
+  if (!lentActive.length && !lentDone.length) {
+    html += emptyState('No loans recorded yet. Use the Scan tab to log a loan.');
+  } else {
+    lentActive.forEach(l => { html += loanCard(l); });
+    lentDone.forEach(l   => { html += loanCard(l); });
+  }
+
+  html += `<div class="sec-hd">Books I've Borrowed</div>`;
+  if (!borActive.length && !borDone.length) {
+    html += emptyState('No borrowed books recorded yet.');
+  } else {
+    borActive.forEach(l => { html += loanCard(l); });
+    borDone.forEach(l   => { html += loanCard(l); });
+  }
+
+  el.innerHTML = html;
+}
+
+function loanCard(l) {
+  const isBorrowed = l.type === 'borrowed';
+  const isDone     = !!l.dateReturned;
+  const who        = isBorrowed ? `From: ${esc(l.borrower)}` : `Borrower: ${esc(l.borrower)}`;
+  const dateLabel  = isBorrowed ? 'Borrowed' : 'Lent';
+
+  let actions = '';
+  if (!isDone) {
+    const label = isBorrowed ? 'Returned to Owner' : 'Returned';
+    actions += `<button class="btn btn-success btn-sm" onclick="markReturned(${l.rowIndex})">${label}</button>`;
+    actions += `<button class="btn btn-ghost btn-sm" onclick="openEditModal(${l.rowIndex})">Edit</button>`;
+  }
+  actions += `<button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.rowIndex})">Delete</button>`;
+
+  return `<div class="loan-card${isBorrowed ? ' borrowed' : ''}${isDone ? ' done' : ''}" id="lcard-${l.rowIndex}">
+    <div class="l-title">${esc(l.title)}</div>
+    <div class="l-author">${esc(l.author)}</div>
+    <div class="l-meta">${who} · ${dateLabel}: ${fmtDate(l.dateLent)}</div>
+    ${isDone ? `<div class="l-meta">Returned: ${fmtDate(l.dateReturned)}</div>` : ''}
+    <div class="l-actions">${actions}</div>
+  </div>`;
+}
+
+async function markReturned(rowIndex) {
+  try {
+    const date = today();
+    await apiPost({ action: 'return', rowIndex, dateReturned: date });
+    const l = loans.find(x => x.rowIndex === rowIndex);
+    if (l) l.dateReturned = date;
+    renderLoans();
+    toast('Marked as returned', 'success');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function deleteLoan(rowIndex) {
+  if (!confirm('Delete this loan record?')) return;
+  try {
+    await apiPost({ action: 'deleteRow', rowIndex });
+    toast('Deleted', 'success');
+    // Reload since row indices shift after delete
+    await loadLoans();
+    renderLoans();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+function openEditModal(rowIndex) {
+  const l = loans.find(x => x.rowIndex === rowIndex);
+  if (!l) return;
+  const personLabel = l.type === 'borrowed' ? 'Lender' : 'Borrower';
+
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-title">Edit Loan</div>
+    <div class="fg">
+      <label class="fl">${personLabel}</label>
+      <input class="inp" id="edit-person" value="${escAttr(l.borrower)}">
+    </div>
+    <div class="fg">
+      <label class="fl">Date</label>
+      <input class="inp" type="date" id="edit-date" value="${escAttr(l.dateLent)}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveEdit(${rowIndex})">Save</button>
+      <button class="btn btn-ghost" onclick="closeOverlay()">Cancel</button>
+    </div>
+  `;
+  openOverlay();
+}
+
+async function saveEdit(rowIndex) {
+  const borrower = document.getElementById('edit-person').value.trim();
+  const dateLent = document.getElementById('edit-date').value;
+  if (!borrower || !dateLent) return toast('Fill in all fields', 'error');
+
+  try {
+    await apiPost({ action: 'updateLoan', rowIndex, borrower, dateLent });
+    const l = loans.find(x => x.rowIndex === rowIndex);
+    if (l) { l.borrower = borrower; l.dateLent = dateLent; }
+    closeOverlay();
+    renderLoans();
+    toast('Updated', 'success');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// BOOKS TAB
+// ════════════════════════════════════════════════════════════
+function renderBooks() {
+  const el      = document.getElementById('books-list');
+  const q       = (document.getElementById('books-q').value  || '').toLowerCase();
+  const fStatus = document.getElementById('status-filter').value;
+
+  const sortBy = document.getElementById('sort-by').value;
+
+  filteredBooks = catalog.filter(b => {
+    if (q && !b.title.toLowerCase().includes(q) && !b.author.toLowerCase().includes(q)) return false;
+    if (fStatus && bookStatus(b) !== fStatus) return false;
+    return true;
+  }).sort((a, b) => {
+    const ka = sortBy === 'author' ? lastName(a.author) : a.title.toLowerCase();
+    const kb = sortBy === 'author' ? lastName(b.author) : b.title.toLowerCase();
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
+
+  if (!filteredBooks.length) {
+    el.innerHTML = catalog.length
+      ? '<div class="empty"><p>No matching books.</p></div>'
+      : `<div class="empty">
+          <div class="empty-icon">📚</div>
+          <p>No books yet.<br>Import a Goodreads CSV or use the Scan tab to add books.</p>
+         </div>`;
+    return;
+  }
+
+  const rows = filteredBooks.map((b, i) => {
+    const status    = bookStatus(b);
+    const pillClass = PILL_CLASS[status] || 'p-other';
+    const count     = loanCount(b);
+    const histHtml  = bookHistoryHtml(b);
+
+    return `<div class="book-wrap">
+      <div class="book-row" onclick="toggleHist(${i})">
+        <div class="book-info">
+          <div class="book-title">${esc(b.title)}</div>
+          <div class="book-author">${esc(b.author)}</div>
+        </div>
+        <div class="book-meta">
+          ${count ? `<span class="loan-badge">${count}</span>` : ''}
+          <span class="pill ${pillClass}"
+            onclick="event.stopPropagation(); openStatusModal(${i})"
+          >${esc(status)}</span>
+        </div>
+      </div>
+      <div class="book-hist" id="hist-${i}">${histHtml}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="book-list">${rows}</div>`;
+}
+
+function toggleHist(i) {
+  document.getElementById(`hist-${i}`).classList.toggle('open');
+}
+
+function bookStatus(b) {
+  const key = bookKey(b);
+  if (statusOverrides[key]) return statusOverrides[key];
+  if (b.status) return b.status;
+  if (b.shelf === 'to-read') return 'Want to read';
+  return 'On shelf';
+}
+
+function loanCount(b) {
+  return loans.filter(l => matchBook(l, b)).length;
+}
+
+function bookHistoryHtml(b) {
+  const bl = loans.filter(l => matchBook(l, b));
+
+  const ratingHtml = starRating(b.rating);
+  const histHtml = bl.length
+    ? `<div class="hist-type" style="margin-top:10px;margin-bottom:4px">Loan history</div>` +
+      bl.map(l => {
+        const isBor = l.type === 'borrowed';
+        const dir   = isBor ? `← from ${esc(l.borrower)}` : `→ ${esc(l.borrower)}`;
+        const ret   = l.dateReturned ? `returned ${fmtDate(l.dateReturned)}` : `on loan`;
+        return `<div class="hist-row">
+          <span>${dir}</span>
+          <span>${fmtDate(l.dateLent)} · ${ret}</span>
+        </div>`;
+      }).join('')
+    : `<div style="color:var(--ink2);font-size:12px;margin-top:10px">No loan history.</div>`;
+
+  return `<div class="hist-rating">${ratingHtml}</div>${histHtml}`;
+}
+
+function starRating(rating) {
+  const n = parseInt(rating) || 0;
+  if (!n) return '<span class="hist-unrated">Not rated on Goodreads</span>';
+  const stars = Array.from({ length: 5 }, (_, i) =>
+    `<span class="star${i < n ? ' filled' : ''}">${i < n ? '★' : '☆'}</span>`
+  ).join('');
+  return `<span class="stars">${stars}</span>`;
+}
+
+function matchBook(loan, b) {
+  if (b.isbn   && loan.isbn === b.isbn)   return true;
+  if (b.isbn13 && loan.isbn === b.isbn13) return true;
+  return loan.title.toLowerCase() === b.title.toLowerCase();
+}
+
+function openStatusModal(i) {
+  const b = filteredBooks[i];
+  if (!b) return;
+  const current = bookStatus(b);
+
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-title">Change Status</div>
+    <div style="font-size:13px;color:var(--ink2);margin-bottom:14px">${esc(b.title)}</div>
+    <div class="status-opt-list">
+      ${STATUSES.map(s => {
+        const pc = PILL_CLASS[s] || 'p-other';
+        const check = s === current ? '✓ ' : '';
+        return `<button class="status-opt" onclick="setBookStatus(${i},'${s}')">
+          <span class="pill ${pc}">${s}</span>
+          <span>${check}${s}</span>
+        </button>`;
+      }).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-full" onclick="closeOverlay()">Cancel</button>
+    </div>
+  `;
+  openOverlay();
+}
+
+async function setBookStatus(i, status) {
+  const b = filteredBooks[i];
+  if (!b) return;
+
+  // "On loan" needs borrower + date so a real loan record is created
+  if (status === 'On loan') {
+    // Block if there's already an active unreturned loan for this book
+    const active = loans.find(l =>
+      l.type === 'lent' && !l.dateReturned &&
+      (l.title.toLowerCase() === b.title.toLowerCase() ||
+       (b.isbn && b.isbn === l.isbn))
+    );
+    if (active) {
+      closeOverlay();
+      toast(`Already on loan to ${active.borrower} — mark it returned first`, 'error');
+      return;
+    }
+
+    document.getElementById('modal').innerHTML = `
+      <div class="modal-title">Lend "${esc(b.title)}"</div>
+      <div class="form-group">
+        <label class="form-label">Borrower name</label>
+        <div class="input-row">
+          <input class="inp" id="ql-borrower" type="text" placeholder="Who are you lending this to?">
+          <button class="mic-btn" id="ql-borrower-mic" onclick="startDictation('ql-borrower')" title="Dictate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date lent</label>
+        <input class="inp" id="ql-date" type="date" value="${today()}">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="confirmLendFromBooks(${i})">Log loan</button>
+        <button class="btn btn-ghost" onclick="closeOverlay()">Cancel</button>
+      </div>
+    `;
+    return; // keep overlay open with the new form
+  }
+
+  // All other statuses — just update label
+  const key = bookKey(b);
+  setOverride(key, status);
+  closeOverlay();
+  renderBooks();
+  toast(`Status: "${status}"`, 'success');
+  if (scriptUrl) apiPost({ action: 'updateStatus', ...b, status }).catch(() => {});
+}
+
+async function confirmLendFromBooks(i) {
+  const b = filteredBooks[i];
+  if (!b) return;
+  const borrower = document.getElementById('ql-borrower').value.trim();
+  const dateLent  = document.getElementById('ql-date').value;
+  if (!borrower) { toast('Enter a borrower name', 'error'); return; }
+  if (!dateLent)  { toast('Pick a date', 'error'); return; }
+  if (!scriptUrl) { toast('Configure Apps Script URL in Settings', 'error'); return; }
+
+  try {
+    await apiPost({ action: 'loan', title: b.title, author: b.author,
+                    isbn: b.isbn || b.isbn13 || '', borrower, dateLent });
+
+    // Optimistically add to local loans array immediately — no second round-trip
+    loans.push({ rowIndex: Date.now(), title: b.title, author: b.author,
+                 isbn: b.isbn || b.isbn13 || '', borrower, dateLent,
+                 dateReturned: '', type: 'lent' });
+
+    const key = bookKey(b);
+    setOverride(key, 'On loan');
+
+    closeOverlay();
+    renderBooks();
+    renderLoans();  // instant — uses the optimistic entry above
+    toast(`Lent to ${borrower}`, 'success');
+
+    // Fire-and-forget background syncs (no await — no lag)
+    apiPost({ action: 'updateStatus', ...b, status: 'On loan' }).catch(() => {});
+    loadLoans().catch(() => {});  // refresh real rowIndices in background
+  } catch(e) {
+    toast(`Error: ${e.message}`, 'error');
+  }
+}
+
+async function reloadBooks() {
+  if (!scriptUrl) return toast('Configure Apps Script URL in Settings', 'error');
+  try {
+    await loadAll();
+    renderBooks();
+    updateCount();
+    toast('Refreshed', 'success');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// SETTINGS TAB
+// ════════════════════════════════════════════════════════════
+async function saveScriptUrl() {
+  const url = (document.getElementById('script-url').value || '').trim();
+  scriptUrl = url;
+  localStorage.setItem('scriptUrl', url);
+
+  const ind = document.getElementById('script-status');
+  ind.className = 'status-ind';
+  ind.textContent = 'Connecting…';
+  ind.style.display = 'block';
+
+  try {
+    await loadAll();
+    renderBooks();
+    updateCount();
+    ind.className = 'status-ind ok';
+    ind.textContent = `Connected — ${catalog.length} books, ${loans.length} loans`;
+  } catch (e) {
+    ind.className = 'status-ind err';
+    ind.textContent = `Failed: ${e.message}`;
+  }
+}
+
+function handleCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const books = parseGoodreadsCSV(e.target.result);
+    if (!books.length) return toast('No books found in CSV', 'error');
+
+    if (scriptUrl) {
+      try {
+        const res = await apiPost({ action: 'importCatalog', books });
+        catalog = books;
+        updateCount();
+        toast(`Imported ${res.count || books.length} books to Google Sheets`, 'success');
+      } catch (err) {
+        toast(`Import failed: ${err.message}`, 'error');
+      }
+    } else {
+      catalog = books;
+      updateCount();
+      toast(`Imported ${books.length} books (configure Script URL to sync to Sheets)`, 'info');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function parseGoodreadsCSV(text) {
+  const lines = text.split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  const headers = parseCSVLine(lines[0]);
+  const books   = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cols = parseCSVLine(lines[i]);
+    const row  = {};
+    headers.forEach((h, j) => row[h.trim()] = (cols[j] || '').trim());
+
+    if (!row.Title) continue;
+
+    const shelf  = (row['Exclusive Shelf'] || '').trim();
+    const status = shelf === 'to-read' ? 'Want to read' : 'On shelf';
+
+    books.push({
+      title:  row.Title,
+      author: row.Author || row['Author l-f'] || '',
+      isbn:   cleanGRIsbn(row.ISBN   || ''),
+      isbn13: cleanGRIsbn(row.ISBN13 || ''),
+      shelf,
+      status,
+      rating: row['My Rating'] || ''
+    });
+  }
+
+  return books;
+}
+
+function parseCSVLine(line) {
+  const cols = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      cols.push(cur); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  cols.push(cur);
+  return cols;
+}
+
+// Goodreads exports ISBNs as ="1234567890"
+function cleanGRIsbn(s) {
+  return s.replace(/^=?"?/, '').replace(/"?$/, '').replace(/"/g, '').trim();
+}
+
+function cleanISBN(s) {
+  return (s || '').replace(/[^0-9X]/gi, '');
+}
+
+// ════════════════════════════════════════════════════════════
+// SPEECH
+// ════════════════════════════════════════════════════════════
+function setupSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+}
+
+function dictate(inputId, btnId) {
+  if (!recognition) return toast('Speech not supported on this browser', 'error');
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+
+  recognition.onstart  = () => btn && btn.classList.add('listening');
+  recognition.onend    = () => btn && btn.classList.remove('listening');
+  recognition.onerror  = () => { btn && btn.classList.remove('listening'); toast('Speech failed', 'error'); };
+  recognition.onresult = e  => { inp.value = e.results[0][0].transcript; };
+
+  try { recognition.start(); }
+  catch { toast('Could not start microphone', 'error'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// MODAL
+// ════════════════════════════════════════════════════════════
+function openOverlay() {
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeOverlay();
+}
+
+// ════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toasts');
+  const d = document.createElement('div');
+  d.className = `toast ${type}`;
+  d.textContent = msg;
+  c.appendChild(d);
+  setTimeout(() => d.remove(), 3000);
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════════
+function bookKey(b) {
+  return b.isbn13 || b.isbn || b.title.toLowerCase().trim();
+}
+
+// Returns the last word of an author name for sorting ("Ursula K. Le Guin" → "guin")
+// Handles "Last, First" format too ("Le Guin, Ursula" → "le guin")
+function lastName(author) {
+  if (!author) return '';
+  const s = author.trim();
+  // "Last, First" — already sorted correctly, use everything before the comma
+  if (s.includes(',')) return s.split(',')[0].toLowerCase();
+  // "First … Last" — take last word
+  const parts = s.split(/\s+/);
+  return parts[parts.length - 1].toLowerCase();
+}
+
+function findInCatalog(book) {
+  return catalog.find(b => {
+    if (book.isbn && (b.isbn === book.isbn || b.isbn13 === book.isbn)) return true;
+    return b.title.toLowerCase().trim() === book.title.toLowerCase().trim();
+  });
+}
+
+function setOverride(key, status) {
+  statusOverrides[key] = status;
+  localStorage.setItem('statusOverrides', JSON.stringify(statusOverrides));
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  try {
+    // Avoid timezone shift: append noon time
+    const d = new Date(s.length === 10 ? s + 'T12:00:00' : s);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return s; }
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escAttr(s) {
+  return esc(s).replace(/'/g, '&#39;');
+}
+
+function emptyState(msg) {
+  return `<div class="empty"><p>${msg}</p></div>`;
+}
+</script>
+</body>
+</html>
